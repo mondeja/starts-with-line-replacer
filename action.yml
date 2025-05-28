@@ -25,15 +25,39 @@ runs:
       env:
         FILE: ${{ inputs.file }}
       run: |
-        # Ensure the file exists
-        [ -f "$FILE" ] || { echo "Error: File '$FILE' does not exist." >&2 && exit 1 }
+        # Ensure the arguments are provided
+        if [[ -z "$FILE" ]]; then
+          echo "Error: 'file' input is required." >&2
+          exit 1
+        fi
+        if [[ -z "${{ inputs.starts-with }}" ]]; then
+          echo "Error: 'starts-with' input is required." >&2
+          exit 1
+        fi
+        if [[ -z "${{ inputs.replace-by }}" ]]; then
+          echo "Error: 'replace-by' input is required." >&2
+          exit 1
+        fi
 
+        # Ensure the file exists
+        if [[ ! -f "$FILE" ]]; then
+          echo "Error: File '$FILE' does not exist." >&2
+          exit 1
+        fi
+      
         # Ensure a line starts with the specified string
-        if ! grep -q '^${{ inputs.starts-with }}' $FILE; then
+        if ! grep -q '^${{ inputs.starts-with }}' "$FILE"; then
           echo "Error: No lines start with the specified 'starts-with' string." >&2
           exit 1
         fi
 
         # Replace lines that start with the specified string
-        sed -i 's/^${{ inputs.starts-with }}.*/${{ inputs.replace-by }}/' "$FILE"
-
+        #
+        # On darwin, sed requires the -i option to be followed by an empty string,
+        # but this is not accepted by GNU sed.
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+          sed_i_option='-i ""'
+        else
+          sed_i_option='-i'
+        fi
+        sed $sed_i_option 's/^${{ inputs.starts-with }}.*/${{ inputs.replace-by }}/' "$FILE"

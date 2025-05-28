@@ -14,23 +14,12 @@ jobs:
     name: Test (${{ matrix.runs-on }})
     runs-on: ${{ matrix.runs-on }}
     steps:
-      - name: Checkout root directory
-        uses: actions/checkout@v4
-        with:
-          # Repository with crate in root and crate in subdirectory
-          repository: 'mondeja/cucumber-thirtyfour-worlder'
-      - name: Contains a line starting with 'version ='
+      - name: Prepare file
+        shell: bash
         run: |
-          if ! grep -q '^version =' Cargo.toml; then
-            echo "Error: Cargo.toml does not contain a line starting with 'version ='" >&2
-            exit 1
-          fi
-      - name: Not contains a line starting with 'foobar ='
-        run: |
-          if grep -q '^foobar =' Cargo.toml; then
-            echo "Error: Cargo.toml contains a line starting with 'foobar ='" >&2
-            exit 1
-          fi
+          echo '[package]' > Cargo.toml
+          echo 'version = "0.1.0"' >> Cargo.toml
+          echo 'foobar = "0.2.0"' >> Cargo.toml
       - name: Replace line starting with 'version =' with 'foobar = 0.0.0'
         uses: mondeja/starts-with-line-replacer@main
         with:
@@ -38,8 +27,16 @@ jobs:
           starts-with: 'version ='
           replace-by: 'foobar = "0.0.0"'
       - name: Contains a line with the content 'foobar = 0.0.0'
+        shell: bash
         run: |
           if ! grep -q '^foobar = "0.0.0"$' Cargo.toml; then
             echo "Error: Cargo.toml does not contain a line with the content 'foobar = 0.0.0'" >&2
+            exit 1
+          fi
+      - name: Does not contain a line starting with 'version ='
+        shell: bash
+        run: |
+          if grep -q '^version =' Cargo.toml; then
+            echo "Error: Cargo.toml contains a line starting with 'version ='" >&2
             exit 1
           fi
