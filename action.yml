@@ -1,0 +1,39 @@
+name: Starts with line replacer
+description: Replaces lines in a file that start with a specific string.
+inputs:
+  working-directory:
+    description: 'The working directory. Defaults to "." (current folder).'
+    required: false
+    default: '.'
+  file:
+    description: 'The file to check for lines starting with a specific string.'
+    required: true
+  starts-with:
+    description: 'The string that lines should start with to be replaced.'
+    required: true
+  replace-by:
+    description: 'The string to replace lines that start with the specified string.'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Get version
+      id: get-version
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        FILE: ${{ inputs.file }}
+      run: |
+        # Ensure the file exists
+        [ -f "$FILE" ] || { echo "Error: File '$FILE' does not exist." >&2 && exit 1 }
+
+        # Ensure a line starts with the specified string
+        if ! grep -q '^${{ inputs.starts-with }}' $FILE; then
+          echo "Error: No lines start with the specified 'starts-with' string." >&2
+          exit 1
+        fi
+
+        # Replace lines that start with the specified string
+        sed -i 's/^${{ inputs.starts-with }}.*/${{ inputs.replace-by }}/' "$FILE"
+
